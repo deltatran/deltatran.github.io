@@ -96,7 +96,15 @@
                     <small id="row-counter" class="text-muted"></small>
                     <div class="d-flex gap-2">
                          <button id="save-progress-btn" class="btn btn-secondary">Сохранить прогресс</button>
-                         <button id="download-btn" class="btn btn-primary">Скачать JSON</button>
+                         <div class="dropdown">
+                            <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                Скачать JSON
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="#" id="download-all-btn">Скачать всё</a></li>
+                                <li><a class="dropdown-item" href="#" id="download-translated-btn">Скачать только переведенное</a></li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
                 <!-- Header -->
@@ -121,11 +129,12 @@
         const rowCounter = document.getElementById('row-counter');
         const loadingOverlay = document.getElementById('loading-overlay');
         const paginationContainer = document.getElementById('pagination-container');
-        const downloadBtn = document.getElementById('download-btn');
         const saveProgressBtn = document.getElementById('save-progress-btn');
         const applyFiltersBtn = document.getElementById('apply-filters-btn');
         const resetFiltersBtn = document.getElementById('reset-filters-btn');
         const sortOptions = document.getElementById('sort-options');
+        const downloadAllBtn = document.getElementById('download-all-btn');
+        const downloadTranslatedBtn = document.getElementById('download-translated-btn');
 
         // --- State ---
         const GITHUB_URL = 'https://raw.githubusercontent.com/Seredyon/deltastrings/main/strings.json';
@@ -155,7 +164,8 @@
             resetFiltersBtn.addEventListener('click', resetFiltersAndRender);
             sortOptions.addEventListener('click', handleSortChange);
             saveProgressBtn.addEventListener('click', handleSaveProgress);
-            downloadBtn.addEventListener('click', handleDownloadJson);
+            downloadAllBtn.addEventListener('click', () => handleDownloadJson(false));
+            downloadTranslatedBtn.addEventListener('click', () => handleDownloadJson(true));
         }
 
         function handleFileLoad(event) {
@@ -373,10 +383,34 @@
             }
         }
         
-        function handleDownloadJson() {
-            const translatedData = { date: originalData.date || new Date().getTime() };
-            workingData.forEach(item => { translatedData[item.key] = item.translation.trim() !== '' ? item.translation : item.original; });
-            downloadFile(JSON.stringify(translatedData, null, 4), originalFileName, 'application/json');
+        function handleDownloadJson(onlyTranslated = false) {
+            let dataToExport = {};
+            const sourceData = workingData;
+
+            if (onlyTranslated) {
+                const translatedItems = sourceData.filter(item => item.translation.trim() !== '');
+                if (translatedItems.length === 0) {
+                    alert("Нет переведенных строк для скачивания.");
+                    return;
+                }
+                translatedItems.forEach(item => {
+                    dataToExport[item.key] = item.translation;
+                });
+            } else {
+                sourceData.forEach(item => { 
+                    dataToExport[item.key] = item.translation.trim() !== '' ? item.translation : item.original; 
+                });
+            }
+            
+            if (originalData.date) {
+                dataToExport.date = originalData.date;
+            }
+
+            const finalFileName = onlyTranslated 
+                ? originalFileName.replace('.json', '_translated_only.json')
+                : originalFileName;
+
+            downloadFile(JSON.stringify(dataToExport, null, 4), finalFileName, 'application/json');
         }
         
         function updateRowCount() { rowCounter.textContent = `Показано: ${displayData.length} из ${workingData.length}`; }
