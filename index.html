@@ -1,505 +1,523 @@
-<!DOCTYPE html>
-<html lang="ru" data-bs-theme="dark">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Редактор переводов</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <style>
-        body {
-            background-color: #212529;
-        }
-        #sticky-panel {
-            position: sticky;
-            top: 0;
-            z-index: 1021;
-            background-color: #212529;
-            padding-top: .5rem;
-            padding-bottom: .5rem;
-            transition: top 0.3s ease-in-out;
-        }
-        #sticky-panel.panel-hidden {
-            top: var(--panel-height, -120px);
-        }
-        #row-counter {
-            text-align: center;
-            line-height: 1.1;
-            min-width: 80px;
-        }
-        .string-item {
-            display: flex;
-            width: 100%;
-            padding: 8px 2px;
-            border-bottom: 1px solid #495057;
-            background-color: #2c3034;
-            flex-direction: column;
-        }
-        .string-item:hover { background-color: #3a3f44; }
-        .string-item .col-md-6 { display: flex; flex-direction: column; }
-        .string-item textarea { 
-            resize: none; 
-            overflow-y: hidden; /* Hide scrollbar flash during resize */
-            background-color: #343a40; 
-            color: #f8f9fa; 
-            border: 1px solid #495057; 
-        }
-        .item-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
-        .item-id { font-size: 0.9em; color: #6c757d; font-weight: bold; }
-        .item-key { font-size: 0.8em; color: #adb5bd; font-family: monospace; word-break: break-all; user-select: all; text-align: right; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-        .translation-wrapper { position: relative; display: flex; flex-direction: column; }
-        .copy-btn { position: absolute; top: 5px; right: 15px; cursor: pointer; background: #495057; border: none; color: white; padding: 1px 5px; border-radius: 4px; font-size: 0.8em; z-index: 10; }
-        .copy-btn:hover { background: #6c757d; }
-        .pagination-input-wrapper { display: flex; align-items: center; }
-        .pagination-input-wrapper .page-input { width: 80px; text-align: center; border-top-right-radius: 0; border-bottom-right-radius: 0; }
-        .pagination-input-wrapper .page-total { padding: .375rem .75rem; background-color: #343a40; border: 1px solid #495057; border-left: 0; color: #f8f9fa; border-radius: 0 .375rem .375rem 0; }
-        .pagination .page-link { background-color: #343a40; border-color: #495057; color: #f8f9fa; }
-        .pagination .page-item.active .page-link { z-index: 0; } /* Fix for input overlay */
-        .pagination .page-item.disabled .page-link { background-color: #212529; border-color: #495057; color: #6c757d; }
-        .dropdown-menu { --bs-dropdown-bg: #343a40; --bs-dropdown-link-color: #f8f9fa; --bs-dropdown-link-hover-bg: #495057; }
-        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); display: flex; justify-content: center; align-items: center; flex-direction: column; z-index: 2000; }
-        
-        /* Mobile Overrides */
-        .mobile-view .string-list-header { display: none; }
-        .mobile-view .string-item .row { flex-direction: column; height: auto !important; }
-        .mobile-view .string-item .col-md-6 { width: 100%; }
-        .mobile-view .item-meta { flex-direction: row; gap: 0.5rem; justify-content: flex-start; }
-        .mobile-view .item-key { text-align: left; }
-        .mobile-view #toolbar-main-actions .btn { font-size: 0.8rem; padding: .25rem .5rem; }
-    </style>
-</head>
-<body>
-    <div id="loading-overlay" class="d-none">
-        <div class="spinner-border text-light" role="status"><span class="visually-hidden">Loading...</span></div>
-        <p class="mt-2">Загрузка строк...</p>
-    </div>
-
-    <div class="container-fluid mt-3">
-        <h1 class="mb-3">Редактор переводов</h1>
-        <div class="card bg-dark-subtle mb-3">
-            <div class="card-body">
-                <h5 class="card-title">Загрузить свой JSON файл</h5>
-                <input type="file" id="json-file-input" class="form-control">
-            </div>
+    <!DOCTYPE html>
+    <html lang="ru" data-bs-theme="dark">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Редактор переводов</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+        <style>
+            body {
+                background-color: #212529;
+            }
+            #sticky-panel {
+                position: sticky;
+                top: 0;
+                z-index: 1021;
+                background-color: #212529;
+                padding-top: .5rem;
+                padding-bottom: .5rem;
+                transition: top 0.3s ease-in-out;
+            }
+            #sticky-panel.panel-hidden {
+                top: var(--panel-height, -120px);
+            }
+            #row-counter {
+                text-align: center;
+                line-height: 1.1;
+                min-width: 80px;
+            }
+            .string-item {
+                display: flex;
+                width: 100%;
+                padding: 8px 2px;
+                border-bottom: 1px solid #495057;
+                background-color: #2c3034;
+                flex-direction: column;
+            }
+            .string-item:hover { background-color: #3a3f44; }
+            .string-item .col-md-6 { display: flex; flex-direction: column; }
+            .string-item textarea { 
+                resize: none; 
+                overflow-y: hidden; /* Hide scrollbar flash during resize */
+                background-color: #343a40; 
+                color: #f8f9fa; 
+                border: 1px solid #495057; 
+            }
+            .item-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
+            .item-id { font-size: 0.9em; color: #6c757d; font-weight: bold; }
+            .item-key { font-size: 0.8em; color: #adb5bd; font-family: monospace; word-break: break-all; user-select: all; text-align: right; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; cursor: pointer; }
+            .translation-wrapper { position: relative; flex-grow: 1; }
+            .copy-btn { 
+                position: absolute; 
+                top: 5px;
+                right: 15px;
+                cursor: pointer; 
+                background: none; 
+                border: none;
+                color: #adb5bd;
+                font-size: 1.2rem;
+                z-index: 10; 
+                opacity: 0;
+                transition: opacity 0.2s ease-in-out;
+            }
+            .copy-btn:hover { color: white; }
+            .translation-wrapper:hover .copy-btn { opacity: 1; }
+            .pagination-input-wrapper { display: flex; align-items: center; }
+            .pagination-input-wrapper .page-input { width: 80px; text-align: center; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+            .pagination-input-wrapper .page-total { padding: .375rem .75rem; background-color: #343a40; border: 1px solid #495057; border-left: 0; color: #f8f9fa; border-radius: 0 .375rem .375rem 0; }
+            .pagination .page-link { background-color: #343a40; border-color: #495057; color: #f8f9fa; }
+            .pagination .page-item.active .page-link { z-index: 0; } /* Fix for input overlay */
+            .pagination .page-item.disabled .page-link { background-color: #212529; border-color: #495057; color: #6c757d; }
+            .dropdown-menu { --bs-dropdown-bg: #343a40; --bs-dropdown-link-color: #f8f9fa; --bs-dropdown-link-hover-bg: #495057; }
+            #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); display: flex; justify-content: center; align-items: center; flex-direction: column; z-index: 2000; }
+            
+            /* Mobile Overrides */
+            .mobile-view .string-list-header { display: none; }
+            .mobile-view .string-item .row { flex-direction: column; height: auto !important; }
+            .mobile-view .string-item .col-md-6 { width: 100%; }
+            .mobile-view .item-meta { flex-direction: row; gap: 0.5rem; justify-content: flex-start; }
+            .mobile-view .item-key { text-align: left; }
+            .mobile-view #toolbar-main-actions .btn { font-size: 0.8rem; padding: .25rem .5rem; }
+        </style>
+    </head>
+    <body>
+        <div id="loading-overlay" class="d-none">
+            <div class="spinner-border text-light" role="status"><span class="visually-hidden">Loading...</span></div>
+            <p class="mt-2">Загрузка строк...</p>
         </div>
 
-        <div id="translation-area" class="d-none">
-            <div id="sticky-panel">
-                <!-- Toolbar -->
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <div class="d-flex gap-2">
-                        <div class="dropdown">
-                            <button class="btn btn-outline-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Фильтры"><i class="bi bi-funnel-fill"></i></button>
-                            <div class="dropdown-menu p-3" style="min-width: 300px;">
-                                <div class="mb-2"><label for="filter-status" class="form-label">Статус</label><select class="form-select form-select-sm" id="filter-status"><option value="untranslated">Непереведённые</option><option value="translated">Переведённые</option><option value="all">Все</option></select></div>
-                                <div class="mb-2"><label for="filter-id" class="form-label">Номер строки (#)</label><input type="text" class="form-control form-control-sm" id="filter-id" placeholder="напр. 123 или 100-150"></div>
-                                <div class="mb-2"><label for="filter-key" class="form-label">Ключ содержит</label><input type="text" class="form-control form-control-sm" id="filter-key"></div>
-                                <div class="mb-2"><label for="filter-original" class="form-label">Оригинал содержит</label><input type="text" class="form-control form-control-sm" id="filter-original"></div>
-                                <div class="mb-2"><label for="filter-translation" class="form-label">Перевод содержит</label><input type="text" class="form-control form-control-sm" id="filter-translation"></div>
-                                <div class="d-flex justify-content-end gap-2 mt-3"><button class="btn btn-secondary btn-sm" id="reset-filters-btn">Сбросить</button><button class="btn btn-primary btn-sm" id="apply-filters-btn">Применить</button></div>
+        <div class="container-fluid mt-3">
+            <h1 class="mb-3">Редактор переводов</h1>
+            <div class="card bg-dark-subtle mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Загрузить свой JSON файл</h5>
+                    <input type="file" id="json-file-input" class="form-control">
+                </div>
+            </div>
+
+            <div id="translation-area" class="d-none">
+                <div id="sticky-panel">
+                    <!-- Toolbar -->
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="d-flex gap-2">
+                            <div class="dropdown">
+                                <button class="btn btn-outline-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Фильтры"><i class="bi bi-funnel-fill"></i></button>
+                                <div class="dropdown-menu p-3" style="min-width: 300px;">
+                                    <div class="mb-2"><label for="filter-status" class="form-label">Статус</label><select class="form-select form-select-sm" id="filter-status"><option value="untranslated">Непереведённые</option><option value="translated">Переведённые</option><option value="all">Все</option></select></div>
+                                    <div class="mb-2"><label for="filter-id" class="form-label">Номер строки (#)</label><input type="text" class="form-control form-control-sm" id="filter-id" placeholder="напр. 123 или 100-150"></div>
+                                    <div class="mb-2"><label for="filter-key" class="form-label">Ключ содержит</label><input type="text" class="form-control form-control-sm" id="filter-key"></div>
+                                    <div class="mb-2"><label for="filter-original" class="form-label">Оригинал содержит</label><input type="text" class="form-control form-control-sm" id="filter-original"></div>
+                                    <div class="mb-2"><label for="filter-translation" class="form-label">Перевод содержит</label><input type="text" class="form-control form-control-sm" id="filter-translation"></div>
+                                    <div class="d-flex justify-content-end gap-2 mt-3"><button class="btn btn-secondary btn-sm" id="reset-filters-btn">Сбросить</button><button class="btn btn-primary btn-sm" id="apply-filters-btn">Применить</button></div>
+                                </div>
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn btn-outline-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Сортировка"><i class="bi bi-sort-down"></i></button>
+                                <ul class="dropdown-menu" id="sort-options">
+                                    <li><a class="dropdown-item" href="#" data-sort="default">По умолчанию</a></li>
+                                    <li><a class="dropdown-item" href="#" data-sort="key_asc">Ключ (А-Я)</a></li>
+                                    <li><a class="dropdown-item" href="#" data-sort="key_desc">Ключ (Я-А)</a></li>
+                                </ul>
                             </div>
                         </div>
-                        <div class="dropdown">
-                             <button class="btn btn-outline-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Сортировка"><i class="bi bi-sort-down"></i></button>
-                            <ul class="dropdown-menu" id="sort-options">
-                                <li><a class="dropdown-item" href="#" data-sort="default">По умолчанию</a></li>
-                                <li><a class="dropdown-item" href="#" data-sort="key_asc">Ключ (А-Я)</a></li>
-                                <li><a class="dropdown-item" href="#" data-sort="key_desc">Ключ (Я-А)</a></li>
-                            </ul>
+                        <small id="row-counter" class="text-muted"></small>
+                        <div class="d-flex gap-2">
+                            <button id="save-progress-btn" class="btn btn-secondary" title="Сохранить прогресс"><i class="bi-floppy"></i></button>
+                            <div class="dropdown">
+                                <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Скачать JSON">
+                                    <i class="bi bi-file-earmark-arrow-down-fill"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" href="#" id="download-all-btn">Скачать всё</a></li>
+                                    <li><a class="dropdown-item" href="#" id="download-translated-btn">Скачать только переведенное</a></li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
-                    <small id="row-counter" class="text-muted"></small>
-                    <div class="d-flex gap-2">
-                         <button id="save-progress-btn" class="btn btn-secondary" title="Сохранить прогресс"><i class="bi-floppy"></i></button>
-                         <div class="dropdown">
-                            <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Скачать JSON">
-                                <i class="bi bi-file-earmark-arrow-down-fill"></i>
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="#" id="download-all-btn">Скачать всё</a></li>
-                                <li><a class="dropdown-item" href="#" id="download-translated-btn">Скачать только переведенное</a></li>
-                            </ul>
-                        </div>
+                    <!-- Header -->
+                    <div class="row gx-2 fw-bold text-muted border-bottom pb-2 mb-1 string-list-header text-center">
+                        <div class="col-md-6">Оригинал</div>
+                        <div class="col-md-6">Перевод</div>
                     </div>
                 </div>
-                <!-- Header -->
-                <div class="row gx-2 fw-bold text-muted border-bottom pb-2 mb-1 string-list-header">
-                    <div class="col-md-6">Оригинал</div>
-                    <div class="col-md-6">Перевод</div>
-                </div>
+                
+                <div id="string-list"></div>
+                <nav id="pagination-container" class="d-flex justify-content-center mt-3 mb-3"></nav>
             </div>
-            
-            <div id="string-list"></div>
-            <nav id="pagination-container" class="d-flex justify-content-center mt-3 mb-3"></nav>
         </div>
-    </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // --- UI Elements ---
-        const fileInput = document.getElementById('json-file-input');
-        const translationArea = document.getElementById('translation-area');
-        const stringList = document.getElementById('string-list');
-        const rowCounter = document.getElementById('row-counter');
-        const loadingOverlay = document.getElementById('loading-overlay');
-        const paginationContainer = document.getElementById('pagination-container');
-        const saveProgressBtn = document.getElementById('save-progress-btn');
-        const applyFiltersBtn = document.getElementById('apply-filters-btn');
-        const resetFiltersBtn = document.getElementById('reset-filters-btn');
-        const sortOptions = document.getElementById('sort-options');
-        const downloadAllBtn = document.getElementById('download-all-btn');
-        const downloadTranslatedBtn = document.getElementById('download-translated-btn');
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+        <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- UI Elements ---
+            const fileInput = document.getElementById('json-file-input');
+            const translationArea = document.getElementById('translation-area');
+            const stringList = document.getElementById('string-list');
+            const rowCounter = document.getElementById('row-counter');
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const paginationContainer = document.getElementById('pagination-container');
+            const saveProgressBtn = document.getElementById('save-progress-btn');
+            const applyFiltersBtn = document.getElementById('apply-filters-btn');
+            const resetFiltersBtn = document.getElementById('reset-filters-btn');
+            const sortOptions = document.getElementById('sort-options');
+            const downloadAllBtn = document.getElementById('download-all-btn');
+            const downloadTranslatedBtn = document.getElementById('download-translated-btn');
 
-        // --- State ---
-        const GITHUB_URL = 'https://raw.githubusercontent.com/Seredyon/deltastrings/main/strings.json';
-        const ITEMS_PER_PAGE = 50;
-        let originalData = null, workingData = [], displayData = [], sort = { by: 'default' };
-        let originalFileName = 'translation.json', currentPage = 1;
-        
-        // --- Helper Functions ---
-        function autoResizeTextarea(textarea) {
-            if (!textarea) return;
-            textarea.style.height = 'auto'; // Reset height to recalculate
-            textarea.style.height = (textarea.scrollHeight) + 'px';
-        }
-
-        // --- Initial Setup ---
-        initialize();
-
-        function initialize() {
-            const isMobile = window.innerWidth < 768;
-            if (isMobile) document.body.classList.add('mobile-view');
+            // --- State ---
+            const GITHUB_URL = 'https://raw.githubusercontent.com/Seredyon/deltastrings/main/strings.json';
+            const ITEMS_PER_PAGE = 50;
+            let originalData = null, workingData = [], displayData = [], sort = { by: 'default' };
+            let originalFileName = 'translation.json', currentPage = 1;
             
-            // Auto-hiding sticky panel logic
-            const stickyPanel = document.getElementById('sticky-panel');
-            let lastScrollTop = 0;
-            const setPanelHeight = () => {
-                stickyPanel.style.setProperty('--panel-height', `-${stickyPanel.offsetHeight}px`);
-            };
-            setPanelHeight(); 
-            new ResizeObserver(setPanelHeight).observe(stickyPanel);
+            // --- Helper Functions ---
+            function autoResizeTextarea(textarea) {
+                if (!textarea) return;
+                textarea.style.height = 'auto'; // Reset height to recalculate
+                textarea.style.height = (textarea.scrollHeight) + 'px';
+            }
 
-            window.addEventListener('scroll', () => {
-                let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-                if (scrollTop > lastScrollTop && scrollTop > stickyPanel.offsetHeight) {
-                    stickyPanel.classList.add('panel-hidden');
-                } else {
-                    stickyPanel.classList.remove('panel-hidden');
-                }
-                lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
-            }, { passive: true });
+            // --- Initial Setup ---
+            initialize();
 
-            showLoading(true, 'Загрузка строк по умолчанию...');
-            fetch(GITHUB_URL)
-                .then(response => response.ok ? response.json() : Promise.reject(new Error(`HTTP error! status: ${response.status}`)))
-                .then(data => handleDataLoaded(data, 'deltarune_strings_translated.json'))
-                .catch(error => {
-                    console.error("Failed to load default strings:", error);
-                    alert("Не удалось загрузить файл по умолчанию. Вы можете загрузить свой файл вручную.");
-                })
-                .finally(() => showLoading(false));
+            function initialize() {
+                const isMobile = window.innerWidth < 768;
+                if (isMobile) document.body.classList.add('mobile-view');
+                
+                // Auto-hiding sticky panel logic
+                const stickyPanel = document.getElementById('sticky-panel');
+                let lastScrollTop = 0;
+                const setPanelHeight = () => {
+                    stickyPanel.style.setProperty('--panel-height', `-${stickyPanel.offsetHeight}px`);
+                };
+                setPanelHeight(); 
+                new ResizeObserver(setPanelHeight).observe(stickyPanel);
 
-            fileInput.addEventListener('change', handleFileLoad);
-            applyFiltersBtn.addEventListener('click', () => { currentPage = 1; applyFiltersAndRender(); });
-            resetFiltersBtn.addEventListener('click', resetFiltersAndRender);
-            sortOptions.addEventListener('click', handleSortChange);
-            saveProgressBtn.addEventListener('click', handleSaveProgress);
-            downloadAllBtn.addEventListener('click', () => handleDownloadJson(false));
-            downloadTranslatedBtn.addEventListener('click', () => handleDownloadJson(true));
-            window.addEventListener('resize', () => {
-                document.querySelectorAll('#string-list textarea').forEach(autoResizeTextarea);
-            });
-        }
+                window.addEventListener('scroll', () => {
+                    let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                    if (scrollTop > lastScrollTop && scrollTop > stickyPanel.offsetHeight) {
+                        stickyPanel.classList.add('panel-hidden');
+                    } else {
+                        stickyPanel.classList.remove('panel-hidden');
+                    }
+                    lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+                }, { passive: true });
 
-        function handleFileLoad(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            originalFileName = file.name.replace('.json', '_translated.json');
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try { handleDataLoaded(JSON.parse(e.target.result)); }
-                catch (error) { alert('Ошибка при чтении JSON файла: ' + error.message); }
-            };
-            reader.readAsText(file);
-        }
-        
-        function handleDataLoaded(data, fileName) {
-            originalData = data;
-            if(fileName) originalFileName = fileName;
-            buildWorkingData(originalData);
-            loadProgress(getFileIdentifier(originalData)); 
-            document.getElementById('filter-status').value = 'all';
-            applyFiltersAndRender();
-            translationArea.classList.remove('d-none');
-        }
+                showLoading(true, 'Загрузка строк по умолчанию...');
+                fetch(GITHUB_URL)
+                    .then(response => response.ok ? response.json() : Promise.reject(new Error(`HTTP error! status: ${response.status}`)))
+                    .then(data => handleDataLoaded(data, 'deltarune_strings_translated.json'))
+                    .catch(error => {
+                        console.error("Failed to load default strings:", error);
+                        alert("Не удалось загрузить файл по умолчанию. Вы можете загрузить свой файл вручную.");
+                    })
+                    .finally(() => showLoading(false));
 
-        function buildWorkingData(data) {
-            workingData = [];
-            let id = 1;
-            for (const key in data) {
-                if (key === 'date') continue;
-                const originalText = data[key];
-                workingData.push({ 
-                    key, 
-                    original: originalText,
-                    originalClean: originalText.replace(/(\\[EGVCNLFNWM]\d*|\^(\d+|\*)|%|\\n|\/\*|\*\/)/g, ' ').replace(/\s+/g, ' ').trim(),
-                    translation: '', 
-                    id: id++ 
+                fileInput.addEventListener('change', handleFileLoad);
+                applyFiltersBtn.addEventListener('click', () => { currentPage = 1; applyFiltersAndRender(); });
+                resetFiltersBtn.addEventListener('click', resetFiltersAndRender);
+                sortOptions.addEventListener('click', handleSortChange);
+                saveProgressBtn.addEventListener('click', handleSaveProgress);
+                downloadAllBtn.addEventListener('click', () => handleDownloadJson(false));
+                downloadTranslatedBtn.addEventListener('click', () => handleDownloadJson(true));
+                window.addEventListener('resize', () => {
+                    document.querySelectorAll('#string-list textarea').forEach(autoResizeTextarea);
                 });
             }
-        }
 
-        function applyFiltersAndRender() {
-            const filters = {
-                status: document.getElementById('filter-status').value,
-                id: document.getElementById('filter-id').value.trim(),
-                key: document.getElementById('filter-key').value.toLowerCase(),
-                original: document.getElementById('filter-original').value.toLowerCase(),
-                translation: document.getElementById('filter-translation').value.toLowerCase()
-            };
-
-            displayData = workingData.filter(item => {
-                if (filters.status === 'untranslated' && item.translation.trim() !== '') return false;
-                if (filters.status === 'translated' && item.translation.trim() === '') return false;
-                if (filters.id) {
-                    if (filters.id.includes('-')) {
-                        const [start, end] = filters.id.split('-').map(Number);
-                        if (!isNaN(start) && !isNaN(end) && (item.id < start || item.id > end)) return false;
-                    } else {
-                        const id = Number(filters.id);
-                        if (!isNaN(id) && item.id !== id) return false;
-                    }
-                }
-                if (filters.key && !item.key.toLowerCase().includes(filters.key)) return false;
-                if (filters.original && !item.originalClean.toLowerCase().includes(filters.original)) return false;
-                if (filters.translation && !item.translation.toLowerCase().includes(filters.translation)) return false;
-                return true;
-            });
+            function handleFileLoad(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                originalFileName = file.name.replace('.json', '_translated.json');
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try { handleDataLoaded(JSON.parse(e.target.result)); }
+                    catch (error) { alert('Ошибка при чтении JSON файла: ' + error.message); }
+                };
+                reader.readAsText(file);
+            }
             
-            applySort();
-            renderPage();
-            renderPagination();
-            updateRowCount();
-        }
+            function handleDataLoaded(data, fileName) {
+                originalData = data;
+                if(fileName) originalFileName = fileName;
+                buildWorkingData(originalData);
+                loadProgress(getFileIdentifier(originalData)); 
+                document.getElementById('filter-status').value = 'all';
+                applyFiltersAndRender();
+                translationArea.classList.remove('d-none');
+            }
 
-        function resetFiltersAndRender() {
-            document.getElementById('filter-status').value = 'all';
-            document.getElementById('filter-id').value = '';
-            document.getElementById('filter-key').value = '';
-            document.getElementById('filter-original').value = '';
-            document.getElementById('filter-translation').value = '';
-            currentPage = 1;
-            sort = { by: 'default' };
-            applyFiltersAndRender();
-        }
+            function buildWorkingData(data) {
+                workingData = [];
+                let id = 1;
+                for (const key in data) {
+                    if (key === 'date') continue;
+                    const originalText = data[key];
+                    workingData.push({ 
+                        key, 
+                        original: originalText,
+                        originalClean: originalText.replace(/(\\[EGVCNLFNWM]\d*|\^(\d+|\*)|%|\\n|\/\*|\*\/)/g, ' ').replace(/\s+/g, ' ').trim(),
+                        translation: '', 
+                        id: id++ 
+                    });
+                }
+            }
 
-        function handleSortChange(e) {
-            if (e.target.tagName === 'A') {
-                const sortValue = e.target.dataset.sort;
-                if (sortValue === 'default') sort = { by: 'default' };
-                else { const [by, order] = sortValue.split('_'); sort = { by, order }; }
+            function applyFiltersAndRender() {
+                const filters = {
+                    status: document.getElementById('filter-status').value,
+                    id: document.getElementById('filter-id').value.trim(),
+                    key: document.getElementById('filter-key').value.toLowerCase(),
+                    original: document.getElementById('filter-original').value.toLowerCase(),
+                    translation: document.getElementById('filter-translation').value.toLowerCase()
+                };
+
+                displayData = workingData.filter(item => {
+                    if (filters.status === 'untranslated' && item.translation.trim() !== '') return false;
+                    if (filters.status === 'translated' && item.translation.trim() === '') return false;
+                    if (filters.id) {
+                        if (filters.id.includes('-')) {
+                            const [start, end] = filters.id.split('-').map(Number);
+                            if (!isNaN(start) && !isNaN(end) && (item.id < start || item.id > end)) return false;
+                        } else {
+                            const id = Number(filters.id);
+                            if (!isNaN(id) && item.id !== id) return false;
+                        }
+                    }
+                    if (filters.key && !item.key.toLowerCase().includes(filters.key)) return false;
+                    if (filters.original && !item.originalClean.toLowerCase().includes(filters.original)) return false;
+                    if (filters.translation && !item.translation.toLowerCase().includes(filters.translation)) return false;
+                    return true;
+                });
+                
+                applySort();
+                renderPage();
+                renderPagination();
+                updateRowCount();
+            }
+
+            function resetFiltersAndRender() {
+                document.getElementById('filter-status').value = 'all';
+                document.getElementById('filter-id').value = '';
+                document.getElementById('filter-key').value = '';
+                document.getElementById('filter-original').value = '';
+                document.getElementById('filter-translation').value = '';
                 currentPage = 1;
+                sort = { by: 'default' };
                 applyFiltersAndRender();
             }
-        }
 
-        function applySort() {
-            if (sort.by === 'default') displayData.sort((a, b) => a.id - b.id);
-            else displayData.sort((a, b) => {
-                const valA = String(a[sort.by] || '').toLowerCase();
-                const valB = String(b[sort.by] || '').toLowerCase();
-                return sort.order === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
-            });
-        }
-
-        function renderPage() {
-            stringList.innerHTML = '';
-            const pageItems = displayData.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
-            const fragment = document.createDocumentFragment();
-            pageItems.forEach(item => fragment.appendChild(createStringItemElement(item)));
-            stringList.appendChild(fragment);
-        }
-        
-        function createStringItemElement({ key, original, translation, id }) {
-            const itemElement = document.createElement('div');
-            itemElement.className = 'string-item';
-            itemElement.dataset.key = key;
-            itemElement.innerHTML = `
-                <div class="row h-100 gx-2">
-                    <div class="col-md-6 original-column">
-                        <div class="translation-wrapper">
-                            <textarea class="form-control" data-type="original" readonly>${escapeHtml(original)}</textarea>
-                            <button class="copy-btn" title="Копировать в перевод"><i class="bi bi-arrow-down-square"></i></button>
-                        </div>
-                    </div>
-                    <div class="col-md-6 translation-column">
-                        <div class="translation-wrapper">
-                            <textarea class="form-control" data-type="translation" placeholder="Введите перевод...">${escapeHtml(translation)}</textarea>
-                        </div>
-                        <div class="item-meta">
-                            <span class="item-id">#${id}</span>
-                            <span class="item-key" title="${key}">${key}</span>
-                        </div>
-                    </div>
-                </div>`;
-
-            // Defer initial resize until after the element is painted
-            requestAnimationFrame(() => {
-                itemElement.querySelectorAll('textarea').forEach(autoResizeTextarea);
-            });
-
-            return itemElement;
-        }
-
-        function renderPagination() {
-            const totalPages = Math.ceil(displayData.length / ITEMS_PER_PAGE);
-            paginationContainer.innerHTML = '';
-            if (totalPages <= 1) return;
-            const prevDisabled = currentPage === 1 ? 'disabled' : '';
-            const nextDisabled = currentPage === totalPages ? 'disabled' : '';
-            paginationContainer.innerHTML = `
-            <ul class="pagination">
-                <li class="page-item ${prevDisabled}"><a class="page-link" href="#" data-page="1" title="Первая">&laquo;&laquo;</a></li>
-                <li class="page-item ${prevDisabled}"><a class="page-link" href="#" data-page="${currentPage - 1}" title="Предыдущая">&laquo;</a></li>
-                <li class="page-item active">
-                    <div class="pagination-input-wrapper">
-                        <input type="number" class="form-control form-control-sm page-input" value="${currentPage}" min="1" max="${totalPages}">
-                        <span class="page-total">/ ${totalPages}</span>
-                    </div>
-                </li>
-                <li class="page-item ${nextDisabled}"><a class="page-link" href="#" data-page="${currentPage + 1}" title="Следующая">&raquo;</a></li>
-                <li class="page-item ${nextDisabled}"><a class="page-link" href="#" data-page="${totalPages}" title="Последняя">&raquo;&raquo;</a></li>
-            </ul>`;
-        }
-        
-        paginationContainer.addEventListener('click', e => {
-            e.preventDefault();
-            const target = e.target.closest('a');
-            if (target && !target.parentElement.classList.contains('disabled')) {
-                currentPage = Number(target.dataset.page);
-                renderPage();
-                renderPagination();
-            }
-        });
-        
-        paginationContainer.addEventListener('change', e => {
-            if (e.target.classList.contains('page-input')) {
-                const totalPages = Math.ceil(displayData.length / ITEMS_PER_PAGE);
-                let newPage = parseInt(e.target.value, 10);
-                if (newPage >= 1 && newPage <= totalPages) currentPage = newPage;
-                else e.target.value = currentPage; // reset if invalid
-                renderPage();
-                renderPagination();
-            }
-        });
-
-        stringList.addEventListener('input', e => {
-            if (e.target?.tagName === 'TEXTAREA') {
-                // Always resize on input
-                autoResizeTextarea(e.target);
-
-                // If it's a translation field, update the data model
-                if (e.target.dataset.type === 'translation') {
-                    const key = e.target.closest('.string-item')?.dataset.key;
-                    if (key) {
-                        const item = workingData.find(d => d.key === key);
-                        if (item) item.translation = e.target.value;
-                    }
+            function handleSortChange(e) {
+                if (e.target.tagName === 'A') {
+                    const sortValue = e.target.dataset.sort;
+                    if (sortValue === 'default') sort = { by: 'default' };
+                    else { const [by, order] = sortValue.split('_'); sort = { by, order }; }
+                    currentPage = 1;
+                    applyFiltersAndRender();
                 }
             }
-        });
 
-        stringList.addEventListener('click', e => {
-            const button = e.target.closest('.copy-btn');
-            if (button) {
-                const itemElement = button.closest('.string-item');
-                const key = itemElement?.dataset.key;
-                if (key) {
-                    const item = workingData.find(d => d.key === key);
-                    const translationTextarea = itemElement.querySelector('textarea[data-type="translation"]');
-                    if (item && translationTextarea) {
-                        item.translation = item.original;
-                        translationTextarea.value = item.original;
-                        autoResizeTextarea(translationTextarea); // Resize after pasting content
-                    }
-                }
-            }
-        });
-        
-        function handleSaveProgress() {
-            if (!originalData) return;
-            const progress = {};
-            workingData.forEach(item => {
-                if (item.translation.trim() !== '' || item.original !== originalData[item.key]) {
-                    progress[item.key] = { original: item.original, translation: item.translation };
-                }
-            });
-            localStorage.setItem(`translation-progress-${getFileIdentifier(originalData)}`, JSON.stringify(progress));
-            alert('Прогресс сохранен!');
-        }
-
-        function loadProgress(identifier) {
-            const savedProgress = localStorage.getItem(`translation-progress-${identifier}`);
-            if (savedProgress) {
-                const progress = JSON.parse(savedProgress);
-                workingData.forEach(item => { if (progress[item.key]) item.translation = progress[item.key].translation; });
-                alert('Загружен сохраненный прогресс.');
-            }
-        }
-        
-        function handleDownloadJson(onlyTranslated = false) {
-            let dataToExport = {};
-            const sourceData = workingData;
-
-            if (onlyTranslated) {
-                const translatedItems = sourceData.filter(item => item.translation.trim() !== '');
-                if (translatedItems.length === 0) {
-                    alert("Нет переведенных строк для скачивания.");
-                    return;
-                }
-                translatedItems.forEach(item => {
-                    dataToExport[item.key] = item.translation;
+            function applySort() {
+                if (sort.by === 'default') displayData.sort((a, b) => a.id - b.id);
+                else displayData.sort((a, b) => {
+                    const valA = String(a[sort.by] || '').toLowerCase();
+                    const valB = String(b[sort.by] || '').toLowerCase();
+                    return sort.order === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
                 });
-            } else {
-                sourceData.forEach(item => { 
-                    dataToExport[item.key] = item.translation.trim() !== '' ? item.translation : item.original; 
-                });
+            }
+
+            function renderPage() {
+                stringList.innerHTML = '';
+                const pageItems = displayData.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+                const fragment = document.createDocumentFragment();
+                pageItems.forEach(item => fragment.appendChild(createStringItemElement(item)));
+                stringList.appendChild(fragment);
             }
             
-            if (originalData.date) {
-                dataToExport.date = originalData.date;
+            function createStringItemElement({ key, original, translation, id }) {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'string-item';
+                itemElement.dataset.key = key;
+                itemElement.innerHTML = `
+                    <div class="row gx-2">
+                        <div class="col-md-6 original-column">
+                            <div class="translation-wrapper">
+                                <textarea class="form-control" data-type="original" readonly>${escapeHtml(original)}</textarea>
+                                <button class="copy-btn" title="Копировать в перевод"><i class="bi bi-arrow-down-square"></i></button>
+                            </div>
+                        </div>
+                        <div class="col-md-6 translation-column">
+                            <div class="translation-wrapper">
+                                <textarea class="form-control" data-type="translation" placeholder="Введите перевод...">${escapeHtml(translation)}</textarea>
+                            </div>
+                            <div class="item-meta">
+                                <span class="item-id">#${id}</span>
+                                <span class="item-key" title="${key}">${key}</span>
+                            </div>
+                        </div>
+                    </div>`;
+
+                // Defer initial resize until after the element is painted
+                requestAnimationFrame(() => {
+                    itemElement.querySelectorAll('textarea').forEach(autoResizeTextarea);
+                });
+
+                return itemElement;
             }
 
-            const finalFileName = onlyTranslated 
-                ? originalFileName.replace('.json', '_translated_only.json')
-                : originalFileName;
+            function renderPagination() {
+                const totalPages = Math.ceil(displayData.length / ITEMS_PER_PAGE);
+                paginationContainer.innerHTML = '';
+                if (totalPages <= 1) return;
+                const prevDisabled = currentPage === 1 ? 'disabled' : '';
+                const nextDisabled = currentPage === totalPages ? 'disabled' : '';
+                paginationContainer.innerHTML = `
+                <ul class="pagination">
+                    <li class="page-item ${prevDisabled}"><a class="page-link" href="#" data-page="1" title="Первая">&laquo;&laquo;</a></li>
+                    <li class="page-item ${prevDisabled}"><a class="page-link" href="#" data-page="${currentPage - 1}" title="Предыдущая">&laquo;</a></li>
+                    <li class="page-item active">
+                        <div class="pagination-input-wrapper">
+                            <input type="number" class="form-control form-control-sm page-input" value="${currentPage}" min="1" max="${totalPages}">
+                            <span class="page-total">/ ${totalPages}</span>
+                        </div>
+                    </li>
+                    <li class="page-item ${nextDisabled}"><a class="page-link" href="#" data-page="${currentPage + 1}" title="Следующая">&raquo;</a></li>
+                    <li class="page-item ${nextDisabled}"><a class="page-link" href="#" data-page="${totalPages}" title="Последняя">&raquo;&raquo;</a></li>
+                </ul>`;
+            }
+            
+            paginationContainer.addEventListener('click', e => {
+                e.preventDefault();
+                const target = e.target.closest('a');
+                if (target && !target.parentElement.classList.contains('disabled')) {
+                    currentPage = Number(target.dataset.page);
+                    renderPage();
+                    renderPagination();
+                }
+            });
+            
+            paginationContainer.addEventListener('change', e => {
+                if (e.target.classList.contains('page-input')) {
+                    const totalPages = Math.ceil(displayData.length / ITEMS_PER_PAGE);
+                    let newPage = parseInt(e.target.value, 10);
+                    if (newPage >= 1 && newPage <= totalPages) currentPage = newPage;
+                    else e.target.value = currentPage; // reset if invalid
+                    renderPage();
+                    renderPagination();
+                }
+            });
 
-            downloadFile(JSON.stringify(dataToExport, null, 4), finalFileName, 'application/json');
-        }
-        
-        function updateRowCount() { 
-            rowCounter.innerHTML = `Показано:<br>${displayData.length} из ${workingData.length}`; 
-        }
-        function showLoading(show, text = 'Загрузка...') {
-            if (show) { loadingOverlay.querySelector('p').textContent = text; loadingOverlay.classList.remove('d-none'); loadingOverlay.classList.add('d-flex'); } 
-            else { loadingOverlay.classList.add('d-none'); loadingOverlay.classList.remove('d-flex'); }
-        }
-        function escapeHtml(text) { return typeof text !== 'string' ? '' : text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
-        function getFileIdentifier(data) {
-            const keys = Object.keys(data).slice(0, 100).join('');
-            let hash = 0;
-            for (let i = 0; i < keys.length; i++) { hash = ((hash << 5) - hash) + keys.charCodeAt(i); hash |= 0; }
-            return hash;
-        }
-        function downloadFile(data, filename, type) {
-            const blob = new Blob([data], { type });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = filename;
-            document.body.appendChild(a); a.click();
-            document.body.removeChild(a); URL.revokeObjectURL(url);
-        }
-    });
-    </script>
-</body>
-</html>
+            stringList.addEventListener('input', e => {
+                if (e.target?.tagName === 'TEXTAREA') {
+                    // Always resize on input
+                    autoResizeTextarea(e.target);
+
+                    // If it's a translation field, update the data model
+                    if (e.target.dataset.type === 'translation') {
+                        const key = e.target.closest('.string-item')?.dataset.key;
+                        if (key) {
+                            const item = workingData.find(d => d.key === key);
+                            if (item) item.translation = e.target.value;
+                        }
+                    }
+                }
+            });
+
+            stringList.addEventListener('click', e => {
+                const button = e.target.closest('.copy-btn');
+                const keyElement = e.target.closest('.item-key');
+
+                if (button) {
+                    const itemElement = button.closest('.string-item');
+                    const key = itemElement?.dataset.key;
+                    if (key) {
+                        const item = workingData.find(d => d.key === key);
+                        const translationTextarea = itemElement.querySelector('textarea[data-type="translation"]');
+                        if (item && translationTextarea) {
+                            item.translation = item.original;
+                            translationTextarea.value = item.original;
+                            autoResizeTextarea(translationTextarea);
+                        }
+                    }
+                } else if (keyElement) {
+                    const fullKey = keyElement.getAttribute('title');
+                    alert(fullKey);
+                }
+            });
+            
+            function handleSaveProgress() {
+                if (!originalData) return;
+                const progress = {};
+                workingData.forEach(item => {
+                    if (item.translation.trim() !== '' || item.original !== originalData[item.key]) {
+                        progress[item.key] = { original: item.original, translation: item.translation };
+                    }
+                });
+                localStorage.setItem(`translation-progress-${getFileIdentifier(originalData)}`, JSON.stringify(progress));
+                alert('Прогресс сохранен!');
+            }
+
+            function loadProgress(identifier) {
+                const savedProgress = localStorage.getItem(`translation-progress-${identifier}`);
+                if (savedProgress) {
+                    const progress = JSON.parse(savedProgress);
+                    workingData.forEach(item => { if (progress[item.key]) item.translation = progress[item.key].translation; });
+                    alert('Загружен сохраненный прогресс.');
+                }
+            }
+            
+            function handleDownloadJson(onlyTranslated = false) {
+                let dataToExport = {};
+                const sourceData = workingData;
+
+                if (onlyTranslated) {
+                    const translatedItems = sourceData.filter(item => item.translation.trim() !== '');
+                    if (translatedItems.length === 0) {
+                        alert("Нет переведенных строк для скачивания.");
+                        return;
+                    }
+                    translatedItems.forEach(item => {
+                        dataToExport[item.key] = item.translation;
+                    });
+                } else {
+                    sourceData.forEach(item => { 
+                        dataToExport[item.key] = item.translation.trim() !== '' ? item.translation : item.original; 
+                    });
+                }
+                
+                if (originalData.date) {
+                    dataToExport.date = originalData.date;
+                }
+
+                const finalFileName = onlyTranslated 
+                    ? originalFileName.replace('.json', '_translated_only.json')
+                    : originalFileName;
+
+                downloadFile(JSON.stringify(dataToExport, null, 4), finalFileName, 'application/json');
+            }
+            
+            function updateRowCount() { 
+                rowCounter.innerHTML = `Показано:<br>${displayData.length} из ${workingData.length}`; 
+            }
+            function showLoading(show, text = 'Загрузка...') {
+                if (show) { loadingOverlay.querySelector('p').textContent = text; loadingOverlay.classList.remove('d-none'); loadingOverlay.classList.add('d-flex'); } 
+                else { loadingOverlay.classList.add('d-none'); loadingOverlay.classList.remove('d-flex'); }
+            }
+            function escapeHtml(text) { return typeof text !== 'string' ? '' : text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
+            function getFileIdentifier(data) {
+                const keys = Object.keys(data).slice(0, 100).join('');
+                let hash = 0;
+                for (let i = 0; i < keys.length; i++) { hash = ((hash << 5) - hash) + keys.charCodeAt(i); hash |= 0; }
+                return hash;
+            }
+            function downloadFile(data, filename, type) {
+                const blob = new Blob([data], { type });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = filename;
+                document.body.appendChild(a); a.click();
+                document.body.removeChild(a); URL.revokeObjectURL(url);
+            }
+        });
+        </script>
+    </body>
+    </html>
