@@ -37,24 +37,34 @@
         }
         .string-item:hover { background-color: #3a3f44; }
         .string-item .col-md-6 { height: 100%; display: flex; flex-direction: column; }
-        .string-item textarea { resize: none; flex-grow: 1; background-color: #343a40; color: #f8f9fa; border: 1px solid #495057; }
+        .string-item textarea { 
+            resize: none; 
+            flex-grow: 1; 
+            background-color: #343a40; 
+            color: #f8f9fa; 
+            border: 1px solid #495057; 
+            height: calc(100% - 20px); /* Make space for copy button */
+            padding-top: 15px; /* Add padding to not overlap with button */
+        }
         .item-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
         .item-id { font-size: 0.9em; color: #6c757d; font-weight: bold; }
-        .item-key {
-            font-size: 0.8em; color: #adb5bd; font-family: monospace;
-            word-break: break-all; user-select: all; text-align: right;
-            overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
-            cursor: pointer;
+        .item-key { font-size: 0.8em; color: #adb5bd; font-family: monospace; word-break: break-all; user-select: all; text-align: right; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; cursor: pointer; }
+        .translation-wrapper { position: relative; display: flex; flex-direction: column; }
+        .copy-btn { 
+            position: absolute; 
+            top: 5px;
+            right: 15px;
+            cursor: pointer; 
+            background: none; 
+            border: none;
+            color: #adb5bd;
+            font-size: 1.2rem;
+            z-index: 10; 
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
         }
-        .translation-wrapper { position: relative; flex-grow: 1; display: flex; flex-direction: column; }
-        .copy-btn { position: absolute; top: 5px; right: 5px; cursor: pointer; background: #495057; border: none; color: white; padding: 1px 5px; border-radius: 4px; font-size: 0.8em; z-index: 10; }
-        .copy-btn:hover { background: #6c757d; }
-        .string-list-header .col-md-6 { text-align: center; }
-
-        /* Popover styles */
-        .popover { --bs-popover-max-width: 400px; --bs-popover-bg: #495057; --bs-popover-body-padding-x: 1rem; --bs-popover-body-padding-y: .75rem; --bs-popover-arrow-width: 1rem; --bs-popover-arrow-height: .5rem; }
-        .popover-body { word-break: break-all; }
-        
+        .copy-btn:hover { color: white; }
+        .translation-wrapper:hover .copy-btn { opacity: 1; }
         .pagination-input-wrapper { display: flex; align-items: center; }
         .pagination-input-wrapper .page-input { width: 80px; text-align: center; border-top-right-radius: 0; border-bottom-right-radius: 0; }
         .pagination-input-wrapper .page-total { padding: .375rem .75rem; background-color: #343a40; border: 1px solid #495057; border-left: 0; color: #f8f9fa; border-radius: 0 .375rem .375rem 0; }
@@ -128,7 +138,7 @@
                     </div>
                 </div>
                 <!-- Header -->
-                <div class="row gx-2 fw-bold text-muted border-bottom pb-2 mb-1 string-list-header">
+                <div class="row gx-2 fw-bold text-muted border-bottom pb-2 mb-1 string-list-header text-center">
                     <div class="col-md-6">Оригинал</div>
                     <div class="col-md-6">Перевод</div>
                 </div>
@@ -175,10 +185,6 @@
             const isMobile = window.innerWidth < 768;
             if (isMobile) document.body.classList.add('mobile-view');
             
-            // Enable popovers
-            const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
-            const popoverList = [...popoverTriggerList].map(popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl));
-
             // Auto-hiding sticky panel logic
             const stickyPanel = document.getElementById('sticky-panel');
             let lastScrollTop = 0;
@@ -340,10 +346,6 @@
                             <textarea class="form-control" data-type="original" readonly>${escapeHtml(original)}</textarea>
                             <button class="copy-btn" title="Копировать в перевод"><i class="bi bi-arrow-down-square"></i></button>
                         </div>
-                        <div class="item-meta">
-                            <span class="item-id">#${id}</span>
-                            <span class="item-key" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="${escapeHtml(key)}">${key}</span>
-                        </div>
                     </div>
                     <div class="col-md-6 translation-column">
                         <div class="translation-wrapper">
@@ -424,17 +426,23 @@
 
         stringList.addEventListener('click', e => {
             const button = e.target.closest('.copy-btn');
+            const keyElement = e.target.closest('.item-key');
+
             if (button) {
-                e.stopPropagation(); // Prevent other clicks
                 const itemElement = button.closest('.string-item');
                 const key = itemElement?.dataset.key;
                 if (key) {
                     const item = workingData.find(d => d.key === key);
-                    if (item) {
+                    const translationTextarea = itemElement.querySelector('textarea[data-type="translation"]');
+                    if (item && translationTextarea) {
                         item.translation = item.original;
-                        itemElement.querySelector('textarea[data-type="translation"]').value = item.original;
+                        translationTextarea.value = item.original;
+                        autoResizeTextarea(translationTextarea);
                     }
                 }
+            } else if (keyElement) {
+                const fullKey = keyElement.getAttribute('title');
+                alert(fullKey);
             }
         });
         
