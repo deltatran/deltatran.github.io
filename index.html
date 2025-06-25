@@ -17,6 +17,15 @@
             background-color: #212529;
             padding-top: .5rem;
             padding-bottom: .5rem;
+            transition: top 0.3s ease-in-out;
+        }
+        #sticky-panel.panel-hidden {
+            top: var(--panel-height, -120px);
+        }
+        #row-counter {
+            text-align: center;
+            line-height: 1.1;
+            min-width: 80px;
         }
         .string-item {
             display: flex;
@@ -27,20 +36,25 @@
             flex-direction: column;
         }
         .string-item:hover { background-color: #3a3f44; }
-        .string-item .col-md-6 { display: flex; flex-direction: column; }
-        .string-item textarea { 
-            resize: none; 
-            overflow-y: hidden; /* Hide scrollbar flash during resize */
-            background-color: #343a40; 
-            color: #f8f9fa; 
-            border: 1px solid #495057; 
-        }
+        .string-item .col-md-6 { height: 100%; display: flex; flex-direction: column; }
+        .string-item textarea { resize: none; flex-grow: 1; background-color: #343a40; color: #f8f9fa; border: 1px solid #495057; }
         .item-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
         .item-id { font-size: 0.9em; color: #6c757d; font-weight: bold; }
-        .item-key { font-size: 0.8em; color: #adb5bd; font-family: monospace; word-break: break-all; user-select: all; text-align: right; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-        .translation-wrapper { position: relative; display: flex; flex-direction: column; }
-        .copy-btn { position: absolute; top: 5px; right: 15px; cursor: pointer; background: #495057; border: none; color: white; padding: 1px 5px; border-radius: 4px; font-size: 0.8em; z-index: 10; }
+        .item-key {
+            font-size: 0.8em; color: #adb5bd; font-family: monospace;
+            word-break: break-all; user-select: all; text-align: right;
+            overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+            cursor: pointer;
+        }
+        .translation-wrapper { position: relative; flex-grow: 1; display: flex; flex-direction: column; }
+        .copy-btn { position: absolute; top: 5px; right: 5px; cursor: pointer; background: #495057; border: none; color: white; padding: 1px 5px; border-radius: 4px; font-size: 0.8em; z-index: 10; }
         .copy-btn:hover { background: #6c757d; }
+        .string-list-header .col-md-6 { text-align: center; }
+
+        /* Popover styles */
+        .popover { --bs-popover-max-width: 400px; --bs-popover-bg: #495057; --bs-popover-body-padding-x: 1rem; --bs-popover-body-padding-y: .75rem; --bs-popover-arrow-width: 1rem; --bs-popover-arrow-height: .5rem; }
+        .popover-body { word-break: break-all; }
+        
         .pagination-input-wrapper { display: flex; align-items: center; }
         .pagination-input-wrapper .page-input { width: 80px; text-align: center; border-top-right-radius: 0; border-bottom-right-radius: 0; }
         .pagination-input-wrapper .page-total { padding: .375rem .75rem; background-color: #343a40; border: 1px solid #495057; border-left: 0; color: #f8f9fa; border-radius: 0 .375rem .375rem 0; }
@@ -161,6 +175,29 @@
             const isMobile = window.innerWidth < 768;
             if (isMobile) document.body.classList.add('mobile-view');
             
+            // Enable popovers
+            const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
+            const popoverList = [...popoverTriggerList].map(popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl));
+
+            // Auto-hiding sticky panel logic
+            const stickyPanel = document.getElementById('sticky-panel');
+            let lastScrollTop = 0;
+            const setPanelHeight = () => {
+                stickyPanel.style.setProperty('--panel-height', `-${stickyPanel.offsetHeight}px`);
+            };
+            setPanelHeight(); 
+            new ResizeObserver(setPanelHeight).observe(stickyPanel);
+
+            window.addEventListener('scroll', () => {
+                let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                if (scrollTop > lastScrollTop && scrollTop > stickyPanel.offsetHeight) {
+                    stickyPanel.classList.add('panel-hidden');
+                } else {
+                    stickyPanel.classList.remove('panel-hidden');
+                }
+                lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+            }, { passive: true });
+
             showLoading(true, 'Загрузка строк по умолчанию...');
             fetch(GITHUB_URL)
                 .then(response => response.ok ? response.json() : Promise.reject(new Error(`HTTP error! status: ${response.status}`)))
@@ -303,6 +340,10 @@
                             <textarea class="form-control" data-type="original" readonly>${escapeHtml(original)}</textarea>
                             <button class="copy-btn" title="Копировать в перевод"><i class="bi bi-arrow-down-square"></i></button>
                         </div>
+                        <div class="item-meta">
+                            <span class="item-id">#${id}</span>
+                            <span class="item-key" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="${escapeHtml(key)}">${key}</span>
+                        </div>
                     </div>
                     <div class="col-md-6 translation-column">
                         <div class="translation-wrapper">
@@ -384,15 +425,14 @@
         stringList.addEventListener('click', e => {
             const button = e.target.closest('.copy-btn');
             if (button) {
+                e.stopPropagation(); // Prevent other clicks
                 const itemElement = button.closest('.string-item');
                 const key = itemElement?.dataset.key;
                 if (key) {
                     const item = workingData.find(d => d.key === key);
-                    const translationTextarea = itemElement.querySelector('textarea[data-type="translation"]');
-                    if (item && translationTextarea) {
+                    if (item) {
                         item.translation = item.original;
-                        translationTextarea.value = item.original;
-                        autoResizeTextarea(translationTextarea); // Resize after pasting content
+                        itemElement.querySelector('textarea[data-type="translation"]').value = item.original;
                     }
                 }
             }
@@ -449,7 +489,9 @@
             downloadFile(JSON.stringify(dataToExport, null, 4), finalFileName, 'application/json');
         }
         
-        function updateRowCount() { rowCounter.textContent = `Показано: ${displayData.length} из ${workingData.length}`; }
+        function updateRowCount() { 
+            rowCounter.innerHTML = `Показано:<br>${displayData.length} из ${workingData.length}`; 
+        }
         function showLoading(show, text = 'Загрузка...') {
             if (show) { loadingOverlay.querySelector('p').textContent = text; loadingOverlay.classList.remove('d-none'); loadingOverlay.classList.add('d-flex'); } 
             else { loadingOverlay.classList.add('d-none'); loadingOverlay.classList.remove('d-flex'); }
