@@ -36,15 +36,13 @@
             flex-direction: column;
         }
         .string-item:hover { background-color: #3a3f44; }
-        .string-item .col-md-6 { height: 100%; display: flex; flex-direction: column; }
+        .string-item .col-md-6 { display: flex; flex-direction: column; }
         .string-item textarea { 
             resize: none; 
-            flex-grow: 1; 
+            overflow-y: hidden; /* Hide scrollbar flash during resize */
             background-color: #343a40; 
             color: #f8f9fa; 
             border: 1px solid #495057; 
-            height: calc(100% - 20px); /* Make space for copy button */
-            padding-top: 15px; /* Add padding to not overlap with button */
         }
         .item-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
         .item-id { font-size: 0.9em; color: #6c757d; font-weight: bold; }
@@ -340,7 +338,7 @@
             itemElement.className = 'string-item';
             itemElement.dataset.key = key;
             itemElement.innerHTML = `
-                <div class="row h-100 gx-2">
+                <div class="row gx-2">
                     <div class="col-md-6 original-column">
                         <div class="translation-wrapper">
                             <textarea class="form-control" data-type="original" readonly>${escapeHtml(original)}</textarea>
