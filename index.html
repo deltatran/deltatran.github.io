@@ -101,10 +101,10 @@
                     </div>
                     <small id="row-counter" class="text-muted"></small>
                     <div class="d-flex gap-2">
-                         <button id="save-progress-btn" class="btn btn-secondary">Сохранить прогресс</button>
+                         <button id="save-progress-btn" class="btn btn-secondary" title="Сохранить прогресс"><i class="bi-floppy"></i></button>
                          <div class="dropdown">
-                            <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                Скачать JSON
+                            <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Скачать JSON">
+                                <i class="bi bi-file-earmark-arrow-down-fill"></i>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li><a class="dropdown-item" href="#" id="download-all-btn">Скачать всё</a></li>
@@ -210,7 +210,14 @@
             let id = 1;
             for (const key in data) {
                 if (key === 'date') continue;
-                workingData.push({ key, original: data[key], translation: '', id: id++ });
+                const originalText = data[key];
+                workingData.push({ 
+                    key, 
+                    original: originalText,
+                    originalClean: originalText.replace(/(\\[EGVCNLFNWM]\d*|\^(\d+|\*)|%|\\n|\/\*|\*\/)/g, ' ').replace(/\s+/g, ' ').trim(),
+                    translation: '', 
+                    id: id++ 
+                });
             }
         }
 
@@ -236,7 +243,7 @@
                     }
                 }
                 if (filters.key && !item.key.toLowerCase().includes(filters.key)) return false;
-                if (filters.original && !item.original.toLowerCase().includes(filters.original)) return false;
+                if (filters.original && !item.originalClean.toLowerCase().includes(filters.original)) return false;
                 if (filters.translation && !item.translation.toLowerCase().includes(filters.translation)) return false;
                 return true;
             });
@@ -294,12 +301,12 @@
                     <div class="col-md-6 original-column">
                         <div class="translation-wrapper">
                             <textarea class="form-control" data-type="original" readonly>${escapeHtml(original)}</textarea>
+                            <button class="copy-btn" title="Копировать в перевод"><i class="bi bi-arrow-down-square"></i></button>
                         </div>
                     </div>
                     <div class="col-md-6 translation-column">
                         <div class="translation-wrapper">
                             <textarea class="form-control" data-type="translation" placeholder="Введите перевод...">${escapeHtml(translation)}</textarea>
-                            <button class="copy-btn" title="Копировать оригинал"><i class="bi bi-arrow-down-square"></i></button>
                         </div>
                         <div class="item-meta">
                             <span class="item-id">#${id}</span>
